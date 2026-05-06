@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.chrome-profile/
+runs/
+config.json
+*.log
+.DS_Store

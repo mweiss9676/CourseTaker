@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -E \"^/c/Projects/cmr-gift-cards/[^/]+$|Web/\\(Application|Areas|Helpers|Controllers\\)\")",
+      "Bash(dotnet test *)",
+      "Bash(dotnet build *)",
+      "Bash(mkdir -p C:/Projects/cmr-gift-cards/.claude/progress/dev)",
+      "Bash(mv C:/Projects/cmr-gift-cards/.claude/progresses/dev/progress.md C:/Projects/cmr-gift-cards/.claude/progress/dev/progress.md)",
+      "Bash(rm -rf C:/Projects/cmr-gift-cards/.claude/progresses)",
+      "Bash(ls -1 /c/Projects/cmr-gift-cards/Migrations/*.cs)",
+      "Bash(ls C:/Projects/cmr-gift-cards/Migrations/*_*.cs)",
+      "Bash(tasklist)",
+      "Bash(cmd /c \"rmdir /S /Q C:\\\\Projects\\\\cmr-gift-cards\\\\Tests\\\\bin\")",
+      "Bash(npx tsc *)",
+      "Bash(grep *)",
+      "Bash(git *)",
+      "Bash(xargs cat *)",
+      "Bash(nswag-client-generator.bat)",
+      "Bash(cmd.exe /c \"nswag-client-generator.bat\")"
+    ]
+  }
+}

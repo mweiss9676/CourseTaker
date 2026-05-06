@@ -1,0 +1,26 @@
+{
+  "courseUrl": "https://66acef354a4f3c6130c95f71.mygo1.com/play/36770293?courseOverviewLink=0&exit=0&exitAction=1&recommendations=0&sidebar=minimised",
+  "userDataDir": "./.chrome-profile",
+  "nextButtonText": "^(next|continue|proceed|submit|finish|got it|i agree|acknowledge|begin|ok|okay)$",
+  "selectors": {
+    "next": [],
+    "dismiss": [],
+    "quizSubmit": []
+  },
+  "video": {
+    "autoplay": true,
+    "playbackRate": 1.0,
+    "muted": true
+  },
+  "limits": {
+    "stallTimeoutSec": 90,
+    "maxClicks": 500,
+    "minClickDelayMs": 400,
+    "maxClickDelayMs": 1200,
+    "postClickWaitMs": 1500
+  },
+  "stopWhen": {
+    "urlContains": "",
+    "textContains": ""
+  }
+}

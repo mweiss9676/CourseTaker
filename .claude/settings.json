@@ -1,0 +1,28 @@
+{
+    "hooks": {
+        "Stop": [
+            {
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "Add-Type -AssemblyName presentationCore; $mp3 = New-Object System.Windows.Media.MediaPlayer; $mp3.Open('C:\\Windows\\Media\\chimes.wav'); $mp3.Play(); Start-Sleep -Seconds 3",
+                        "shell": "powershell",
+                        "async": true
+                    }
+                ]
+            }
+        ],
+        "Notification": [
+            {
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "Add-Type -AssemblyName presentationCore; $mp3 = New-Object System.Windows.Media.MediaPlayer; $mp3.Open('C:\\Windows\\Media\\chimes.wav'); $mp3.Play(); Start-Sleep -Seconds 3",
+                        "shell": "powershell",
+                        "async": true
+                    }
+                ]
+            }
+        ]
+    }
+}
