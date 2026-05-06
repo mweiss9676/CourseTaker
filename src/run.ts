@@ -13,6 +13,7 @@ import { log } from "./util/log.js";
 import { humanDelay, sleep } from "./util/sleep.js";
 import { onEnter, PauseController, startEnterWatcher } from "./util/keys.js";
 import { dumpFrames } from "./util/dumpFrames.js";
+import { anyMediaPlaying } from "./util/mediaState.js";
 
 export interface RunArgs {
   browser: Browser;
@@ -107,6 +108,14 @@ export async function runCourse(args: RunArgs): Promise<void> {
           }
           continue;
         }
+      }
+
+      if (await anyMediaPlaying(page)) {
+        noCandidateSince = Date.now();
+        warnedNoCandidate = false;
+        lastProgressAt = Date.now();
+        await sleep(2000);
+        continue;
       }
 
       if (!warnedNoCandidate && noCandFor > noCandidateWarnMs) {
