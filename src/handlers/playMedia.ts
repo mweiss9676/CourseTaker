@@ -41,7 +41,7 @@ export async function playMedia(
         { playbackRate: config.video.playbackRate, muted: config.video.muted },
       );
       if (result.started > 0) {
-        log.info(
+        log.debug(
           `Started ${result.started}/${result.mediaCount} media element(s) in frame`,
         );
         acted = true;

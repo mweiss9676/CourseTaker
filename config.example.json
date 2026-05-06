@@ -1,11 +1,16 @@
 {
-  "courseUrl": "https://66acef354a4f3c6130c95f71.mygo1.com/play/36770293?courseOverviewLink=0&exit=0&exitAction=1&recommendations=0&sidebar=minimised",
+  "courseUrl": "https://example.com/course/123",
   "userDataDir": "./.chrome-profile",
+  "browser": {
+    "mode": "launch",
+    "connectUrl": "http://127.0.0.1:9222"
+  },
   "nextButtonText": "^(next|continue|proceed|submit|finish|got it|i agree|acknowledge|begin|ok|okay)$",
   "selectors": {
     "next": [],
     "dismiss": [],
-    "quizSubmit": []
+    "quizSubmit": [],
+    "deny": []
   },
   "video": {
     "autoplay": true,

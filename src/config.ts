@@ -5,11 +5,16 @@ import { resolve } from "node:path";
 export interface Config {
   courseUrl: string;
   userDataDir: string;
+  browser: {
+    mode: "launch" | "connect";
+    connectUrl: string;
+  };
   nextButtonText: string;
   selectors: {
     next: string[];
     dismiss: string[];
     quizSubmit: string[];
+    deny: string[];
   };
   video: {
     autoplay: boolean;
@@ -32,9 +37,10 @@ export interface Config {
 const DEFAULTS: Config = {
   courseUrl: "",
   userDataDir: "./.chrome-profile",
+  browser: { mode: "launch", connectUrl: "http://127.0.0.1:9222" },
   nextButtonText:
     "^(next|continue|proceed|submit|finish|got it|i agree|acknowledge|begin|ok|okay)$",
-  selectors: { next: [], dismiss: [], quizSubmit: [] },
+  selectors: { next: [], dismiss: [], quizSubmit: [], deny: [] },
   video: { autoplay: true, playbackRate: 1.0, muted: true },
   limits: {
     stallTimeoutSec: 90,
@@ -58,6 +64,7 @@ export async function loadConfig(path = "./config.json"): Promise<Config> {
   const merged: Config = {
     ...DEFAULTS,
     ...parsed,
+    browser: { ...DEFAULTS.browser, ...(parsed.browser ?? {}) },
     selectors: { ...DEFAULTS.selectors, ...(parsed.selectors ?? {}) },
     video: { ...DEFAULTS.video, ...(parsed.video ?? {}) },
     limits: { ...DEFAULTS.limits, ...(parsed.limits ?? {}) },

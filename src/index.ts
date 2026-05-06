@@ -5,12 +5,16 @@ import { runCourse } from "./run.js";
 
 async function main(): Promise<void> {
   const config = await loadConfig();
-  const { browser, page } = await launchBrowser(config);
+  const { browser, page, isConnect } = await launchBrowser(config);
 
   process.on("SIGINT", async () => {
-    log.warn("SIGINT received, closing browser...");
+    log.warn("SIGINT received...");
     try {
-      await browser.close();
+      if (isConnect) {
+        await browser.disconnect();
+      } else {
+        await browser.close();
+      }
     } catch {
       /* ignore */
     }
@@ -20,12 +24,17 @@ async function main(): Promise<void> {
   await waitForUserConfirm(
     [
       "============================================================",
-      "  Browser is open. Do these things, then press ENTER:",
-      "    1. Sign in to the course platform.",
+      "  Browser is open and IDLE. The script will NOT click or",
+      "  navigate anywhere until you press ENTER below.",
+      "",
+      "  In the browser, do these in order:",
+      "    1. Type the URL into the address bar yourself and sign in",
+      "       (CAPTCHAs hate page.goto from a fresh session).",
       "    2. Navigate to the lesson you want auto-completed.",
-      "    3. Make sure the page is fully loaded.",
-      "  Press ENTER again at any time to PAUSE/RESUME automation.",
-      "  Ctrl+C to quit.",
+      "    3. Make sure the page is fully loaded and visible.",
+      "    4. Come back here and press ENTER to start clicking.",
+      "",
+      "  Once running, ENTER pauses/resumes. Ctrl+C quits.",
       "============================================================",
     ].join("\n"),
   );

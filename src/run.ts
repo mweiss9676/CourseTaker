@@ -7,9 +7,12 @@ import { dismissModals } from "./handlers/dismissModals.js";
 import { waitForTimer } from "./handlers/waitForTimer.js";
 import { playMedia } from "./handlers/playMedia.js";
 import { answerQuiz } from "./handlers/answerQuiz.js";
+import { QuizSolver } from "./handlers/quizSolver.js";
+import { Explorer } from "./handlers/exploreInteractives.js";
 import { log } from "./util/log.js";
 import { humanDelay, sleep } from "./util/sleep.js";
 import { onEnter, PauseController, startEnterWatcher } from "./util/keys.js";
+import { dumpFrames } from "./util/dumpFrames.js";
 
 export interface RunArgs {
   browser: Browser;
@@ -39,8 +42,16 @@ export async function runCourse(args: RunArgs): Promise<void> {
   let lastSig = await pageSignature(page);
   let lastProgressAt = Date.now();
   let stallScreenshots = 0;
+  let noCandidateSince: number | null = null;
+  let warnedNoCandidate = false;
 
   const stallTimeoutMs = config.limits.stallTimeoutSec * 1000;
+  const noCandidateExploreMs = 5_000;
+  const noCandidateWarnMs = 12_000;
+  const noCandidatePauseMs = 30_000;
+
+  const explorer = new Explorer(config.selectors.deny);
+  const quiz = new QuizSolver();
 
   while (clicks < config.limits.maxClicks) {
     await pause.waitIfPaused();
@@ -69,30 +80,76 @@ export async function runCourse(args: RunArgs): Promise<void> {
       continue;
     }
 
+    if (await quiz.tryAnswer(page)) {
+      await sleep(config.limits.postClickWaitMs);
+      const newSig = await pageSignature(page);
+      if (newSig !== lastSig) {
+        lastSig = newSig;
+        lastProgressAt = Date.now();
+      }
+      continue;
+    }
+
     const candidate = await findNextCandidate(page, config);
     if (!candidate) {
-      const since = Date.now() - lastProgressAt;
-      if (since > stallTimeoutMs) {
+      if (noCandidateSince === null) noCandidateSince = Date.now();
+      const noCandFor = Date.now() - noCandidateSince;
+
+      if (noCandFor > noCandidateExploreMs) {
+        explorer.resetForPage(lastSig);
+        const explored = await explorer.tryClickOne(page);
+        if (explored) {
+          await sleep(config.limits.postClickWaitMs);
+          const newSig = await pageSignature(page);
+          if (newSig !== lastSig) {
+            lastSig = newSig;
+            lastProgressAt = Date.now();
+          }
+          continue;
+        }
+      }
+
+      if (!warnedNoCandidate && noCandFor > noCandidateWarnMs) {
+        warnedNoCandidate = true;
+        log.warn(
+          "Nothing obvious to click and explorer found nothing more. If this page needs you to do something specific (drag items, answer a question), do it now — I'll pick up the Next button automatically.",
+        );
+      }
+
+      const stalled =
+        noCandFor > noCandidatePauseMs ||
+        Date.now() - lastProgressAt > stallTimeoutMs;
+      if (stalled) {
         stallScreenshots++;
         const path = resolve(runDir, `stall-${stallScreenshots}.png`);
         try {
           await page.screenshot({ path: path as `${string}.png`, fullPage: true });
-          log.warn(`Stalled with no candidate. Screenshot: ${path}`);
+          log.warn(`Still stuck. Screenshot: ${path}`);
         } catch (err) {
-          log.warn("Stalled with no candidate; screenshot failed.", err);
+          log.warn("Stalled; screenshot failed.", err);
+        }
+        try {
+          await dumpFrames(page, runDir, `stall${stallScreenshots}`);
+        } catch (err) {
+          log.warn("Frame dump failed.", err);
         }
         log.warn(
-          "Pausing automation. Take whatever action is needed in the browser, then press ENTER to resume.",
+          "PAUSED. Take action in the browser, then press ENTER to resume.",
         );
-        process.stdout.write("\x07"); // bell
+        process.stdout.write("\x07");
         if (!pause.isPaused()) pause.toggle();
         await pause.waitIfPaused();
         lastProgressAt = Date.now();
+        noCandidateSince = null;
+        warnedNoCandidate = false;
         continue;
       }
-      await sleep(1000);
+      await sleep(1500);
       continue;
     }
+
+    noCandidateSince = null;
+    warnedNoCandidate = false;
 
     log.info(
       `Click #${clicks + 1} -> "${candidate.text}" (${candidate.reason})`,
