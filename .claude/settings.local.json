@@ -16,7 +16,13 @@
       "Bash(git *)",
       "Bash(xargs cat *)",
       "Bash(nswag-client-generator.bat)",
-      "Bash(cmd.exe /c \"nswag-client-generator.bat\")"
+      "Bash(cmd.exe /c \"nswag-client-generator.bat\")",
+      "Bash(Get-Content -Path \"C:\\\\Projects\\\\CourseTaker\\\\page.html\" -ReadCount 0)",
+      "Bash(Select-String -Pattern \"icon-flip|card-front|card-back|flip-card\" -Context 5)",
+      "Bash(python3 -c \"import re; content = open\\('page.html'\\).read\\(\\); buttons = re.findall\\(r'<button[^>]{0,500}?>\\(.*?\\)</button>', content, re.IGNORECASE\\); [print\\(b[:100]\\) for b in buttons[:20]]\")",
+      "Bash(python3)",
+      "PowerShell($content = Get-Content \"C:\\\\Projects\\\\CourseTaker\\\\page.html\" -Raw; $idx = $content.IndexOf\\('knowledge-check-modal'\\); if \\($idx -ge 0\\) { Write-Host \"Found at position $idx`nContext:\"; $content.Substring\\([Math]::Max\\(0, $idx-300\\), [Math]::Min\\(600, $content.Length - $idx + 300\\)\\) } else { Write-Host \"Not found\" })",
+      "PowerShell($content = Get-Content \"C:\\\\Projects\\\\CourseTaker\\\\page.html\" -Raw; if \\($content.Contains\\('sc-empnci'\\)\\) { Write-Host \"Found sc-empnci\" } else { Write-Host \"sc-empnci NOT found\" }; if \\($content.Contains\\('kEpKFH'\\)\\) { Write-Host \"Found kEpKFH\" } else { Write-Host \"kEpKFH NOT found\" }; if \\($content.Contains\\('>Next<'\\)\\) { Write-Host \"Found >Next< button text\" } else { Write-Host \">Next< NOT found\" })"
     ]
   }
 }

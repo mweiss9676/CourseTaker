@@ -23,7 +23,6 @@ import { humanDelay, sleep } from "../util/sleep.js";
  */
 
 const CLICKED_ATTR = "data-coursetaker-clicked";
-const EXPLORE_TARGET_ATTR = "data-coursetaker-explore-target";
 
 const DEFAULT_CONTENT_DENY_ANCESTORS = [
   "header",
@@ -95,10 +94,18 @@ export class Explorer {
       if (this.mode === "conservative") {
         let burst = 1;
         const maxBurst = 30;
+        const seen = new Set([`${first.name}::${first.reason}`]);
+        const hadDialog = await this.hasOpenDialog(page);
         while (burst < maxBurst) {
           await sleep(250);
+          // A newly-opened modal means the click was stateful (card flip, etc.)
+          // — stop bursting and let the main loop handle what's inside.
+          if (!hadDialog && await this.hasOpenDialog(page)) break;
           const more = await this.passOnce(page, this.mode);
           if (!more) break;
+          const key = `${more.name}::${more.reason}`;
+          if (seen.has(key)) break;
+          seen.add(key);
           burst++;
           log.info(
             `Explore [${this.mode}]: burst #${burst} clicked "${more.name}" (${more.reason})`,
@@ -137,7 +144,6 @@ export class Explorer {
             const {
               mode,
               clickedAttr,
-              targetAttr,
               denyAncestors,
               denyNamePattern,
               denySubstringPattern,
@@ -204,7 +210,7 @@ export class Explorer {
 
             const explicitSet = new Set(explicit);
             const cursorCandidates: Element[] = [];
-            const all = Array.from(document.querySelectorAll("body *"));
+            const all = document.querySelectorAll("body *");
             for (const el of all) {
               if (explicitSet.has(el)) continue;
               if (el.children.length > 8) continue;
@@ -277,10 +283,20 @@ export class Explorer {
 
               if (!qualifies) continue;
 
-              document
-                .querySelectorAll(`[${targetAttr}]`)
-                .forEach((e) => e.removeAttribute(targetAttr));
-              el.setAttribute(targetAttr, "1");
+              el.setAttribute(clickedAttr, "1");
+              try {
+                (el as HTMLElement).scrollIntoView({
+                  block: "center",
+                  inline: "center",
+                });
+              } catch {
+                /* ignore */
+              }
+              try {
+                (el as HTMLElement).click();
+              } catch {
+                /* ignore */
+              }
               return { name: name.slice(0, 80) || "(unnamed)", reason };
             }
             return null;
@@ -288,7 +304,6 @@ export class Explorer {
           {
             mode,
             clickedAttr: CLICKED_ATTR,
-            targetAttr: EXPLORE_TARGET_ATTR,
             denyAncestors: this.denyAncestors,
             denyNamePattern: NAME_DENY_PATTERN,
             denySubstringPattern: NAME_DENY_SUBSTRING_PATTERN,
@@ -296,54 +311,7 @@ export class Explorer {
             candidateSelector: CANDIDATE_SELECTOR,
           },
         );
-
-        if (!result) continue;
-
-        const handle = await frame.$(`[${EXPLORE_TARGET_ATTR}]`);
-        if (!handle) {
-          log.warn(`explore: tagged candidate but couldn't get handle in ${fUrl}`);
-          continue;
-        }
-
-        try {
-          await handle.scrollIntoView().catch(() => {});
-          await handle.click({ delay: 30 });
-        } catch (err) {
-          log.warn(
-            `explore: native click failed (${(err as Error).message}); falling back to JS click`,
-          );
-          try {
-            await frame.evaluate(
-              (el) => (el as HTMLElement).click(),
-              handle,
-            );
-          } catch {
-            /* ignore */
-          }
-        }
-
-        try {
-          await frame.evaluate(
-            (args) => {
-              const el = document.querySelector(`[${args.targetAttr}]`);
-              if (el) {
-                el.removeAttribute(args.targetAttr);
-                el.setAttribute(args.clickedAttr, "1");
-              }
-            },
-            { targetAttr: EXPLORE_TARGET_ATTR, clickedAttr: CLICKED_ATTR },
-          );
-        } catch {
-          /* ignore */
-        }
-
-        try {
-          await handle.dispose();
-        } catch {
-          /* ignore */
-        }
-
-        return result;
+        if (result) return result;
       } catch (err) {
         log.warn(
           `explore: frame eval failed in ${fUrl}: ${(err as Error).message}`,
@@ -351,5 +319,26 @@ export class Explorer {
       }
     }
     return null;
+  }
+
+  private async hasOpenDialog(page: Page): Promise<boolean> {
+    for (const frame of page.frames()) {
+      if (frame.isDetached()) continue;
+      try {
+        const found = await frame.evaluate(() =>
+          !!(
+            document.querySelector(
+              '[role="dialog"]:not([aria-hidden="true"]),' +
+              '[aria-modal="true"]:not([aria-hidden="true"]),' +
+              '[data-testid*="modal"]:not([aria-hidden="true"])',
+            )
+          ),
+        );
+        if (found) return true;
+      } catch {
+        /* ignore; cross-origin or detached */
+      }
+    }
+    return false;
   }
 }

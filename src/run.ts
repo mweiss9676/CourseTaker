@@ -164,6 +164,29 @@ export async function runCourse(args: RunArgs): Promise<void> {
       `Click #${clicks + 1} -> "${candidate.text}" (${candidate.reason})`,
     );
 
+    // Text-regex "Next" buttons inside SCORM content cards (identified by a
+    // [data-id] element in the ancestor tree) need extra dwell time. The
+    // course framework records the current card as viewed asynchronously;
+    // clicking too fast short-circuits the sequence and breaks page state.
+    if (candidate.reason === "text-regex") {
+      try {
+        const isContentCard = await candidate.frame.evaluate((el) => {
+          let node: Element | null = el;
+          for (let i = 0; i < 6 && node; i++) {
+            if (node.querySelector("[data-id]")) return true;
+            node = node.parentElement;
+          }
+          return false;
+        }, candidate.element);
+        if (isContentCard) {
+          log.debug("Content card detected — adding reading pause.");
+          await sleep(2000);
+        }
+      } catch {
+        /* ignore; frame may be cross-origin */
+      }
+    }
+
     try {
       await candidate.element.scrollIntoView().catch(() => {});
       await humanDelay(
